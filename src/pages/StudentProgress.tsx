@@ -217,6 +217,7 @@ const StudentProgress = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
@@ -338,7 +339,7 @@ const StudentProgress = () => {
                     <th className="py-7 px-10">ข้อมูลนักศึกษา</th>
                     <th className="py-7 px-8 text-center">ความคืบหน้าเคส</th>
                     <th className="py-7 px-8 text-center">การเข้าเวร</th>
-                    <th className="py-7 px-8 text-center">การประเมิน</th>
+                    <th className="py-7 px-8 text-center">การผ่านการประเมิน</th>
                     <th className="py-7 px-8 text-center">คะแนนเฉลี่ย</th>
                     <th className="py-7 px-8 text-right">รายละเอียด</th>
                   </tr>

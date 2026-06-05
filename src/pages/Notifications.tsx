@@ -116,6 +116,7 @@ const Notifications = () => {
     <>
         <DashboardHeader 
           studentName={studentName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}

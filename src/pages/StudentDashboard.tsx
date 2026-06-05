@@ -132,6 +132,7 @@ const StudentDashboard = () => {
     <>
         <DashboardHeader 
           studentName={studentName} 
+          profileImage={user?.profile_image}
           unreadCount={stats?.unreadNotificationsCount || 0}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
@@ -170,7 +171,7 @@ const StudentDashboard = () => {
             />
 
             <AdminStatCard 
-              title="สถานะการประเมิน"
+              title="สถานะการผ่านการประเมิน"
               value={(stats?.approvedCases || 0) + (stats?.rejectedCases || 0)}
               unit="เคส"
               icon={<HiClipboardDocumentList size={28} />}

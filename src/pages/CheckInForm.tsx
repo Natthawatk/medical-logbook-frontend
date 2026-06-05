@@ -23,6 +23,7 @@ interface Preceptor {
 const CheckInForm = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [locations, setLocations] = useState<Location[]>([]);
   const [preceptors, setPreceptors] = useState<Preceptor[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -147,6 +148,7 @@ const CheckInForm = () => {
     <>
         <DashboardHeader 
           studentName={studentName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}

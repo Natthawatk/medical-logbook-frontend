@@ -14,6 +14,8 @@ import {
   User
 } from 'lucide-react';
 import api from '../services/api';
+import { useToast } from '../components/ToastContext';
+import { useModal } from '../components/ModalContext';
 
 interface LocationData {
   _id: string;
@@ -33,38 +35,41 @@ const LocationManagement = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { showToast } = useToast();
+  const { confirm } = useModal();
   
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const adminName = user?.firstname_lastname || 'ผู้ดูแลระบบ';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [locationRes, unreadRes, preceptorRes] = await Promise.all([
-          api.get('/locations'),
-          api.get('/notifications/unread-count'),
-          api.get('/users/preceptors')
-        ]);
-        
-        if (locationRes.data.success) {
-          const locsWithCount = locationRes.data.data.map((loc: LocationData) => {
-            const count = preceptorRes.data.data.filter((p: any) => p.workplace?._id === loc._id || p.workplace === loc._id).length;
-            return { ...loc, preceptor_count: count };
-          });
-          setLocations(locsWithCount);
-          setFilteredLocations(locsWithCount);
-        }
-        if (unreadRes.data.success) {
-          setUnreadCount(unreadRes.data.count);
-        }
-      } catch (err) {
-        console.error('Error fetching locations data:', err);
-      } finally {
-        setIsLoading(false);
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [locationRes, unreadRes, preceptorRes] = await Promise.all([
+        api.get('/locations'),
+        api.get('/notifications/unread-count'),
+        api.get('/users/preceptors')
+      ]);
+      
+      if (locationRes.data.success) {
+        const locsWithCount = locationRes.data.data.map((loc: LocationData) => {
+          const count = preceptorRes.data.data.filter((p: any) => p.workplace?._id === loc._id || p.workplace === loc._id).length;
+          return { ...loc, preceptor_count: count };
+        });
+        setLocations(locsWithCount);
+        setFilteredLocations(locsWithCount);
       }
-    };
+      if (unreadRes.data.success) {
+        setUnreadCount(unreadRes.data.count);
+      }
+    } catch (err) {
+      console.error('Error fetching locations data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -88,6 +93,28 @@ const LocationManagement = () => {
     navigate(`/admin/locations/${id}/edit`);
   };
 
+  const handleDeleteLocation = async (id: string, name: string) => {
+    const isConfirmed = await confirm({
+      title: 'ยืนยันการลบสถานที่',
+      message: `คุณต้องการลบสถานที่ "${name}" ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`,
+      type: 'danger',
+      confirmText: 'ลบข้อมูล',
+      cancelText: 'ยกเลิก'
+    });
+
+    if (isConfirmed) {
+      try {
+        const response = await api.delete(`/locations/${id}`);
+        if (response.data.success) {
+          showToast('ลบสถานที่สำเร็จ', 'success');
+          fetchData();
+        }
+      } catch (err: any) {
+        showToast(err.response?.data?.message || 'ไม่สามารถลบสถานที่ได้', 'error');
+      }
+    }
+  };
+
   const semesters = ['ทั้งหมด', ...Array.from(new Set(locations.map(c => c.semester).filter(Boolean)))];
 
   const stats = {
@@ -107,6 +134,7 @@ const LocationManagement = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
@@ -238,7 +266,10 @@ const LocationManagement = () => {
                             >
                               <Edit2 size={18} strokeWidth={2.5} />
                             </button>
-                            <button className="p-2.5 bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-white hover:shadow-md rounded-xl transition-all border border-transparent hover:border-rose-100">
+                            <button 
+                              onClick={() => handleDeleteLocation(loc._id, loc.Location_name)}
+                              className="p-2.5 bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-white hover:shadow-md rounded-xl transition-all border border-transparent hover:border-rose-100"
+                            >
                               <Trash2 size={18} strokeWidth={2.5} />
                             </button>
                           </div>

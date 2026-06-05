@@ -14,6 +14,7 @@ const EvaluateProcedures = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,6 +106,7 @@ const EvaluateProcedures = () => {
     <>
         <DashboardHeader 
           studentName={preceptorName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}

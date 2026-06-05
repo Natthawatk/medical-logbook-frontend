@@ -133,6 +133,7 @@ const AddUser = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={currentUser?.profile_image}
           unreadCount={0}
           onBack={() => navigate('/admin/accounts')}
           onProfileClick={() => navigate('/profile')}
@@ -149,17 +150,13 @@ const AddUser = () => {
             <div className="flex flex-col items-center mb-12">
               <div className="relative">
                 <div 
-                  className="w-36 h-36 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-xl group cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
+                  className="w-36 h-36 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-xl"
                 >
                   {profileImage ? (
                     <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User size={72} strokeWidth={1.5} className="text-slate-300" />
                   )}
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera className="text-white" size={28} />
-                  </div>
                 </div>
               </div>
               
@@ -326,7 +323,6 @@ const AddUser = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto p-1 bg-slate-50/30 rounded-2xl border border-slate-100 shadow-inner">
                       {(() => {
                         const filteredCourses = courses.filter(c => 
-                          (!formData.year || String(c.year) === String(formData.year)) &&
                           (!formData.semester || String(c.semester) === String(formData.semester))
                         );
 
@@ -366,7 +362,7 @@ const AddUser = () => {
                         ) : (
                           <div className="col-span-full py-10 text-center">
                             <AlertCircle className="mx-auto text-slate-300 mb-2" size={32} />
-                            <p className="text-slate-400 font-bold text-sm">ไม่พบรายวิชาที่ตรงกับ ชั้นปี {formData.year || '-'} และ เทอม {formData.semester || '-'}</p>
+                            <p className="text-slate-400 font-bold text-sm">ไม่พบรายวิชาที่ตรงกับ เทอม {formData.semester || '-'}</p>
                           </div>
                         );
                       })()}
@@ -387,14 +383,18 @@ const AddUser = () => {
                           name="workplace"
                           value={formData.workplace}
                           onChange={handleInputChange}
-                          required={formData.role === 'preceptor'}
-                          className="w-full pl-12 pr-5 py-4 border border-slate-100 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700 appearance-none cursor-pointer"
+                          required={false}
+                          className="w-full pl-12 pr-10 py-4 border border-slate-100 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700 appearance-none cursor-pointer"
                         >
-                          <option value="">เลือกสถานที่</option>
-                          {locations.map(loc => (
-                            <option key={loc._id} value={loc._id}>{loc.Location_name} (เทอม {loc.semester})</option>
-                          ))}
+                          <option value="">เลือกสถานที่ (ไม่บังคับ)</option>
+                          {locations
+                            .filter(loc => !formData.semester || String(loc.semester) === String(formData.semester))
+                            .map(loc => (
+                              <option key={loc._id} value={loc._id}>{loc.Location_name} (เทอม {loc.semester})</option>
+                            ))
+                          }
                         </select>
+
                       </div>
                     </div>
                     <div className="space-y-2">

@@ -161,7 +161,8 @@ const AdminStudentDetail = () => {
     }
   };
 
-  const adminName = JSON.parse(localStorage.getItem('user') || '{}').firstname_lastname || 'ผู้ดูแลระบบ';
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const adminName = user?.firstname_lastname || 'ผู้ดูแลระบบ';
 
   if (isLoading) {
     return (
@@ -175,6 +176,7 @@ const AdminStudentDetail = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
@@ -308,7 +310,7 @@ const AdminStudentDetail = () => {
             />
 
             <AdminStatCard 
-              title="สถานะการประเมิน"
+              title="สถานะการผ่านการประเมิน"
               value={(stats?.approvedCases || 0) + (stats?.rejectedCases || 0)}
               unit="เคส"
               icon={<HiClipboardDocumentList size={28} />}

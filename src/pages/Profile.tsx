@@ -7,6 +7,7 @@ import { useToast } from '../components/ToastContext';
 
 const Profile = () => {
   const { showToast } = useToast();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [profileData, setProfileData] = useState<any>(null);
@@ -112,6 +113,7 @@ const Profile = () => {
     <>
         <DashboardHeader 
           studentName={profileData?.firstname_lastname || 'User'} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
@@ -123,36 +125,34 @@ const Profile = () => {
         <div className="max-w-4xl mx-auto mt-8 bg-white p-10 rounded-[40px] border-2 border-white shadow-xl">
           <form className="space-y-10" onSubmit={handleSubmit}>
             <div className="flex flex-col md:flex-row items-center gap-10 pb-10 border-b-2 border-slate-50">
-              <div className="relative group">
+              <div className="relative">
                 <div 
-                  className={`w-32 h-32 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg transition-all ${isEditing ? 'cursor-pointer hover:opacity-80' : ''}`}
-                  onClick={() => isEditing && fileInputRef.current?.click()}
+                  className="w-32 h-32 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg transition-all"
                 >
                   {profileImage ? (
                     <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User size={64} className="text-slate-300" />
                   )}
-                  {isEditing && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Camera className="text-white" size={24} />
-                    </div>
-                  )}
                 </div>
-                <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
               </div>
 
               <div className="text-center md:text-left space-y-2">
                 <h3 className="text-2xl font-black text-slate-800">{profileData?.firstname_lastname}</h3>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2">
                   <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-black border border-blue-100 uppercase tracking-widest">
-                    {profileData?.role === 'student' ? 'นักศึกษา' : profileData?.role}
+                    {profileData?.role === 'student' ? 'นักศึกษา' : profileData?.role === 'preceptor' ? 'อาจารย์พี่เลี้ยง' : 'ผู้ดูแลระบบ'}
                   </span>
-                  {profileData?.role === 'student' && (
-                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-black border border-emerald-100 uppercase tracking-widest">
-                      {profileData?.academic_status === 'active' ? 'กำลังศึกษา' : 'พ้นสภาพ'}
-                    </span>
-                  )}
+                  <span className={`px-3 py-1 rounded-full text-xs font-black border uppercase tracking-widest ${
+                    profileData?.academic_status === 'active' || !profileData?.academic_status ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                    profileData?.academic_status === 'graduated' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                    'bg-slate-50 text-slate-400 border-slate-200'
+                  }`}>
+                    {profileData?.role === 'student' 
+                      ? (profileData?.academic_status === 'active' || !profileData?.academic_status ? 'กำลังศึกษา' : profileData?.academic_status === 'graduated' ? 'สำเร็จการศึกษา' : 'พ้นสภาพ')
+                      : (profileData?.academic_status === 'active' || !profileData?.academic_status ? 'ใช้งานอยู่' : 'ระงับใช้งาน')
+                    }
+                  </span>
                 </div>
               </div>
               

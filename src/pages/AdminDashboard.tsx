@@ -57,7 +57,8 @@ const AdminDashboard = () => {
     fetchSkillsStats();
   }, [selectedCourseId]);
 
-  const adminName = JSON.parse(localStorage.getItem('user') || '{}').firstname_lastname || 'ผู้ดูแลระบบ';
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const adminName = user.firstname_lastname || 'ผู้ดูแลระบบ';
 
   const selectedCourse = stats?.courseProgress?.find((c: any) => c._id === selectedCourseId);
 
@@ -73,6 +74,7 @@ const AdminDashboard = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={stats?.unreadNotificationsCount || 0}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}

@@ -73,11 +73,12 @@ const EditCourse = () => {
     const { name, value } = e.target;
     setFormData(prev => {
       if (name === 'semester' && value !== prev.semester) {
-        return { ...prev, [name]: value, enrolled_students: [] };
+        return { ...prev, [name]: value, enrolled_students: [], enrolled_locations: [] };
       }
       return { ...prev, [name]: value };
     });
   };
+
 
   const handleCopyCourse = () => {
     let nextSemester = formData.semester;
@@ -228,6 +229,7 @@ const EditCourse = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}

@@ -14,6 +14,8 @@ import {
   Layers
 } from 'lucide-react';
 import api from '../services/api';
+import { useToast } from '../components/ToastContext';
+import { useModal } from '../components/ModalContext';
 
 interface ProcedureData {
   _id: string;
@@ -35,33 +37,36 @@ const ProcedureManagement = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { showToast } = useToast();
+  const { confirm } = useModal();
   
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const adminName = user?.firstname_lastname || 'ผู้ดูแลระบบ';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [procRes, unreadRes] = await Promise.all([
-          api.get('/procedures'),
-          api.get('/notifications/unread-count')
-        ]);
-        
-        if (procRes.data.success) {
-          setProcedures(procRes.data.data);
-          setFilteredProcedures(procRes.data.data);
-        }
-        if (unreadRes.data.success) {
-          setUnreadCount(unreadRes.data.count);
-        }
-      } catch (err) {
-        console.error('Error fetching procedures data:', err);
-      } finally {
-        setIsLoading(false);
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [procRes, unreadRes] = await Promise.all([
+        api.get('/procedures'),
+        api.get('/notifications/unread-count')
+      ]);
+      
+      if (procRes.data.success) {
+        setProcedures(procRes.data.data);
+        setFilteredProcedures(procRes.data.data);
       }
-    };
+      if (unreadRes.data.success) {
+        setUnreadCount(unreadRes.data.count);
+      }
+    } catch (err) {
+      console.error('Error fetching procedures data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -87,6 +92,28 @@ const ProcedureManagement = () => {
     navigate(`/admin/procedures/${id}/edit`);
   };
 
+  const handleDeleteProcedure = async (id: string, name: string) => {
+    const isConfirmed = await confirm({
+      title: 'ยืนยันการลบหัตถการ',
+      message: `คุณต้องการลบหัตถการ "${name}" ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`,
+      type: 'danger',
+      confirmText: 'ลบข้อมูล',
+      cancelText: 'ยกเลิก'
+    });
+
+    if (isConfirmed) {
+      try {
+        const response = await api.delete(`/procedures/${id}`);
+        if (response.data.success) {
+          showToast('ลบหัตถการสำเร็จ', 'success');
+          fetchData();
+        }
+      } catch (err: any) {
+        showToast(err.response?.data?.message || 'ไม่สามารถลบหัตถการได้', 'error');
+      }
+    }
+  };
+
   const courses = ['ทั้งหมด', ...Array.from(new Set(procedures.map(p => p.course_id?.course_name).filter(Boolean)))];
 
   const stats = {
@@ -107,6 +134,7 @@ const ProcedureManagement = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
@@ -232,7 +260,10 @@ const ProcedureManagement = () => {
                             >
                               <Edit2 size={18} strokeWidth={2.5} />
                             </button>
-                            <button className="p-2.5 bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-white hover:shadow-md rounded-xl transition-all border border-transparent hover:border-rose-100">
+                            <button 
+                              onClick={() => handleDeleteProcedure(p._id, p.procedure_name)}
+                              className="p-2.5 bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-white hover:shadow-md rounded-xl transition-all border border-transparent hover:border-rose-100"
+                            >
                               <Trash2 size={18} strokeWidth={2.5} />
                             </button>
                           </div>

@@ -167,6 +167,7 @@ const LogbookCaseDetail = () => {
     <>
       <DashboardHeader 
         studentName={userName} 
+        profileImage={user?.profile_image}
         unreadCount={unreadCount}
         onProfileClick={() => navigate('/profile')}
         onNotificationClick={() => navigate('/notifications')}

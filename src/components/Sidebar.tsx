@@ -10,16 +10,28 @@ import {
   BookOpen
 } from 'lucide-react';
 import logo from '../assets/logo.png';
+import { useModal } from './ModalContext';
 
 const Sidebar = () => {
   const navigate = useNavigate();
+  const { confirm } = useModal();
   
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const role = user.role;
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
+  const handleLogout = async () => {
+    const isConfirmed = await confirm({
+      title: 'ออกจากระบบ',
+      message: 'คุณต้องการออกจากระบบใช่หรือไม่?',
+      type: 'danger',
+      confirmText: 'ออกจากระบบ',
+      cancelText: 'ยกเลิก'
+    });
+
+    if (isConfirmed) {
+      localStorage.clear();
+      navigate('/login');
+    }
   };
 
   const studentMenuItems = [

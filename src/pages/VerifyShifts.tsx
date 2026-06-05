@@ -17,6 +17,7 @@ import { useToast } from '../components/ToastContext';
 
 const VerifyShifts = () => {
   const { showToast } = useToast();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [shifts, setShifts] = useState<any[]>([]);
   const [filteredShifts, setFilteredShifts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -164,6 +165,7 @@ const VerifyShifts = () => {
     <>
         <DashboardHeader 
           studentName={preceptorName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}

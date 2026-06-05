@@ -99,9 +99,11 @@ const CourseManagement = () => {
 
   const handleDeleteCourse = async (id: string, name: string) => {
     const isConfirmed = await confirm({
-      title: 'ยืนยันการลบ',
-      message: `คุณต้องการลบรายวิชา "${name}" ใช่หรือไม่?`,
-      type: 'danger'
+      title: 'ยืนยันการลบรายวิชา',
+      message: `คุณต้องการลบรายวิชา "${name}" ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`,
+      type: 'danger',
+      confirmText: 'ลบรายวิชา',
+      cancelText: 'ยกเลิก'
     });
 
     if (isConfirmed) {
@@ -137,6 +139,7 @@ const CourseManagement = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}

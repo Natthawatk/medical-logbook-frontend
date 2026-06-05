@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../components/ToastContext';
+import { useModal } from '../components/ModalContext';
 import { useRef } from 'react';
 
 interface UserData {
@@ -39,8 +40,20 @@ interface UserData {
   };
 }
 
+interface ImportResults {
+  created: number;
+  updated: number;
+  failed: number;
+  errors: Array<{
+    row: number;
+    email: string;
+    message: string;
+  }>;
+}
+
 const AccountsManagement = () => {
   const { showToast } = useToast();
+  const { confirm } = useModal();
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,6 +65,7 @@ const AccountsManagement = () => {
   // Import States
   const [showImportModal, setShowImportModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [importResults, setImportResults] = useState<ImportResults | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -112,11 +126,37 @@ const AccountsManagement = () => {
     navigate(`/admin/accounts/${id}/edit`);
   };
 
+  const handleDeleteUser = async (id: string, name: string) => {
+    const isConfirmed = await confirm({
+      title: 'ยืนยันการลบผู้ใช้งาน',
+      message: `คุณต้องการลบบัญชีของ "${name}" ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`,
+      type: 'danger',
+      confirmText: 'ลบข้อมูล',
+      cancelText: 'ยกเลิก'
+    });
+
+    if (isConfirmed) {
+      try {
+        const response = await api.delete(`/users/${id}`);
+        if (response.data.success) {
+          showToast('ลบผู้ใช้งานเรียบร้อยแล้ว', 'success');
+          fetchData();
+        }
+      } catch (err: any) {
+        showToast(err.response?.data?.message || 'ไม่สามารถลบผู้ใช้งานได้', 'error');
+      }
+    }
+  };
+
   const handleDownloadTemplate = () => {
-    const headers = ['firstname_lastname', 'email', 'student_id', 'role', 'year', 'semester', 'phone_number', 'password'];
+    const headers = ['ชื่อ-นามสกุล', 'อีเมล', 'เบอร์โทรศัพท์', 'บทบาท (student/preceptor/admin)', 'รหัสนักศึกษา', 'ชั้นปี', 'เทอม (เช่น 1/2569)', 'รหัสสถานที่ (ID)', 'รหัสผ่าน'];
+    const rows = [
+      ['สมชาย เรียนดี', 'somchai.s@example.com', '0812345678', 'student', '6501100001', '4', '1/2569', '', 'password123'],
+      ['พญ.สมหญิง ใจดี', 'somying.j@example.com', '0898765432', 'preceptor', '', '', '1/2569', '6a1b0248f8cf6a43b1e969bd', 'pass456']
+    ];
+    
     const csvContent = headers.join(',') + '\n' + 
-      'John Doe,john@example.com,660100123,student,3,1/2569,0812345678,password123\n' +
-      'Jane Smith,jane@example.com,,preceptor,,1/2569,0898765432,pass456';
+      rows.map(row => row.join(',')).join('\n');
     
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -145,8 +185,18 @@ const AccountsManagement = () => {
       });
 
       if (response.data.success) {
-        showToast(`นำเข้าสำเร็จ: สร้างใหม่ ${response.data.created} บัญชี, อัปเดต ${response.data.updated} บัญชี`, 'success');
-        setShowImportModal(false);
+        setImportResults({
+          created: response.data.created,
+          updated: response.data.updated,
+          failed: response.data.failed,
+          errors: response.data.errors || []
+        });
+        
+        if (response.data.failed === 0) {
+          showToast(`นำเข้าสำเร็จ: สร้างใหม่ ${response.data.created}, อัปเดต ${response.data.updated}`, 'success');
+        } else {
+          showToast(`นำเข้าสำเร็จบางส่วน: ล้มเหลว ${response.data.failed} รายการ`, 'warning');
+        }
         fetchData();
       }
     } catch (err: any) {
@@ -156,6 +206,12 @@ const AccountsManagement = () => {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const openImportModal = () => {
+    setImportResults(null);
+    setUploadError(null);
+    setShowImportModal(true);
   };
 
   const roles = ['ทั้งหมด', 'นักศึกษา', 'พี่เลี้ยง', 'แอดมิน'];
@@ -215,6 +271,7 @@ const AccountsManagement = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
@@ -296,7 +353,7 @@ const AccountsManagement = () => {
               </div>
 
               <button 
-                onClick={() => setShowImportModal(true)}
+                onClick={openImportModal}
                 className="bg-white text-slate-700 px-6 py-3.5 rounded-2xl font-black flex items-center justify-center gap-2 transition hover:bg-slate-50 border-2 border-slate-100 shadow-sm whitespace-nowrap text-sm uppercase tracking-widest"
               >
                 <FileUp size={20} strokeWidth={3} />
@@ -372,7 +429,10 @@ const AccountsManagement = () => {
                             >
                               <Edit2 size={18} strokeWidth={2.5} />
                             </button>
-                            <button className="p-2.5 bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-white hover:shadow-md rounded-xl transition-all border border-transparent hover:border-rose-100">
+                            <button 
+                              onClick={() => handleDeleteUser(u._id, u.firstname_lastname)}
+                              className="p-2.5 bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-white hover:shadow-md rounded-xl transition-all border border-transparent hover:border-rose-100"
+                            >
                               <Trash2 size={18} strokeWidth={2.5} />
                             </button>
                           </div>
@@ -405,34 +465,34 @@ const AccountsManagement = () => {
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => !isUploading && setShowImportModal(false)}></div>
             
-            <div className="relative bg-white w-full max-w-xl rounded-[48px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-4 border-white">
-              <div className="p-8 border-b-2 border-slate-50 flex justify-between items-center bg-slate-50/50">
+            <div className="relative bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-4 border-white max-h-[95vh] flex flex-col">
+              <div className="p-6 border-b-2 border-slate-50 flex justify-between items-center bg-slate-50/50 shrink-0">
                 <div>
-                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">นำเข้าข้อมูลผู้ใช้ (.CSV)</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 tracking-[0.1em]">รองรับทั้งนักศึกษาและอาจารย์พี่เลี้ยง</p>
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight">นำเข้าข้อมูลผู้ใช้ (.CSV)</h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 tracking-[0.1em]">รองรับทั้งนักศึกษาและอาจารย์พี่เลี้ยง</p>
                 </div>
                 <button 
                   onClick={() => setShowImportModal(false)}
-                  className="p-3 bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all active:scale-90 shadow-sm border border-slate-100"
+                  className="p-2.5 bg-white text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all active:scale-90 shadow-sm border border-slate-100"
                 >
-                  <X size={20} strokeWidth={3} />
+                  <X size={18} strokeWidth={3} />
                 </button>
               </div>
 
-              <div className="p-10 space-y-8">
-                <div className="bg-blue-50/50 p-6 rounded-[32px] border-2 border-blue-100 flex items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
-                      <Download size={24} strokeWidth={2.5} />
+              <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                <div className="bg-blue-50/50 p-5 rounded-[28px] border-2 border-blue-100 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100 shrink-0">
+                      <Download size={20} strokeWidth={2.5} />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-blue-700 leading-tight">ดาวน์โหลด Template</p>
-                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-tight mt-0.5">ใช้รูปแบบไฟล์ที่ระบบกำหนด</p>
+                      <p className="text-xs font-black text-blue-700 leading-tight">ดาวน์โหลด Template</p>
+                      <p className="text-[9px] font-bold text-blue-400 uppercase tracking-tight mt-0.5">ใช้รูปแบบไฟล์ที่กำหนด</p>
                     </div>
                   </div>
                   <button 
                     onClick={handleDownloadTemplate}
-                    className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100 active:scale-95"
+                    className="px-4 py-2 bg-white text-blue-600 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100 active:scale-95 whitespace-nowrap"
                   >
                     Download
                   </button>
@@ -440,52 +500,90 @@ const AccountsManagement = () => {
 
                 <div 
                   onClick={() => !isUploading && fileInputRef.current?.click()}
-                  className={`relative border-4 border-dashed rounded-[40px] p-16 transition-all flex flex-col items-center justify-center group cursor-pointer ${
+                  className={`relative border-4 border-dashed rounded-[32px] p-8 sm:p-12 transition-all flex flex-col items-center justify-center group cursor-pointer ${
                     isUploading ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/30 border-slate-100 hover:border-blue-300 hover:bg-blue-50/30'
                   }`}
                 >
                   <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".csv" disabled={isUploading} />
                   
                   {isUploading ? (
-                    <div className="flex flex-col items-center gap-5">
-                      <div className="animate-spin rounded-full h-14 w-14 border-b-4 border-blue-600"></div>
-                      <p className="text-sm font-black text-slate-600 uppercase tracking-widest animate-pulse">กำลังดำเนินการ...</p>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="animate-spin rounded-full h-12 w-14 border-b-4 border-blue-600"></div>
+                      <p className="text-xs font-black text-slate-600 uppercase tracking-widest animate-pulse">กำลังดำเนินการ...</p>
                     </div>
                   ) : (
                     <>
-                      <div className="w-24 h-24 bg-white rounded-[32px] flex items-center justify-center text-slate-200 shadow-xl group-hover:text-blue-500 group-hover:scale-110 transition-all duration-500 mb-8 border border-slate-50">
-                        <UploadCloud size={48} strokeWidth={1.5} />
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-[24px] flex items-center justify-center text-slate-200 shadow-xl group-hover:text-blue-500 group-hover:scale-110 transition-all duration-500 mb-6 border border-slate-50">
+                        <UploadCloud size={36} strokeWidth={1.5} />
                       </div>
-                      <p className="text-xl font-black text-slate-800 tracking-tight">คลิกเพื่อเลือกไฟล์ .CSV</p>
+                      <p className="text-lg font-black text-slate-800 tracking-tight">คลิกเพื่อเลือกไฟล์ .CSV</p>
                     </>
                   )}
                 </div>
 
-                {uploadError && (
-                  <div className="bg-rose-50 p-5 rounded-[24px] border-2 border-rose-100 flex items-center gap-4 animate-in shake duration-500">
-                    <AlertCircle className="text-rose-500 shrink-0" size={24} />
-                    <p className="text-xs font-bold text-rose-600 leading-relaxed">{uploadError}</p>
+                {importResults && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-center">
+                        <p className="text-[9px] font-black text-emerald-600 uppercase">สร้างใหม่</p>
+                        <p className="text-xl font-black text-emerald-700">{importResults.created}</p>
+                      </div>
+                      <div className="bg-blue-50 p-3 rounded-2xl border border-blue-100 text-center">
+                        <p className="text-[9px] font-black text-blue-600 uppercase">อัปเดต</p>
+                        <p className="text-xl font-black text-blue-700">{importResults.updated}</p>
+                      </div>
+                      <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 text-center">
+                        <p className="text-[9px] font-black text-rose-600 uppercase">ล้มเหลว</p>
+                        <p className="text-xl font-black text-rose-700">{importResults.failed}</p>
+                      </div>
+                    </div>
+
+                    {importResults.errors.length > 0 && (
+                      <div className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+                        <div className="bg-slate-100 px-4 py-2 border-b border-slate-200">
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">รายการที่ผิดพลาด</p>
+                        </div>
+                        <div className="max-h-40 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                          {importResults.errors.map((err, idx) => (
+                            <div key={idx} className="bg-white p-2 rounded-xl border border-rose-100 flex items-start gap-3">
+                              <span className="bg-rose-100 text-rose-600 text-[9px] font-black px-1.5 py-0.5 rounded-md shrink-0">แถว {err.row}</span>
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-bold text-slate-700 truncate">{err.email}</p>
+                                <p className="text-[10px] font-bold text-rose-500">{err.message}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <div className="bg-slate-50 p-6 rounded-[32px] border border-slate-100">
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">คำแนะนำการใช้งาน</p>
-                   <ul className="space-y-2">
-                      <li className="text-[11px] font-bold text-slate-500 flex items-start gap-2">
+                {uploadError && (
+                  <div className="bg-rose-50 p-4 rounded-2xl border-2 border-rose-100 flex items-center gap-3 animate-in shake duration-500">
+                    <AlertCircle className="text-rose-500 shrink-0" size={20} />
+                    <p className="text-[11px] font-bold text-rose-600 leading-relaxed">{uploadError}</p>
+                  </div>
+                )}
+
+                <div className="bg-slate-50 p-5 rounded-[28px] border border-slate-100">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2.5">คำแนะนำการใช้งาน</p>
+                   <ul className="space-y-1.5">
+                      <li className="text-[10px] font-bold text-slate-500 flex items-start gap-2">
                         <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
                         ระบุ role เป็น 'student', 'preceptor' หรือ 'admin'
                       </li>
-                      <li className="text-[11px] font-bold text-slate-500 flex items-start gap-2">
+                      <li className="text-[10px] font-bold text-slate-500 flex items-start gap-2">
                         <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
-                        ระบุ semester (เทอม) เช่น '1/2569' สำหรับทั้งนักศึกษาและพี่เลี้ยง
+                        ระบุ semester (เทอม) เช่น '1/2569'
                       </li>
-                      <li className="text-[11px] font-bold text-slate-500 flex items-start gap-2">
+                      <li className="text-[10px] font-bold text-slate-500 flex items-start gap-2">
                         <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
                         สำหรับนักศึกษา จำเป็นต้องระบุ student_id และ year
                       </li>
-                      <li className="text-[11px] font-bold text-slate-500 flex items-start gap-2">
+                      <li className="text-[10px] font-bold text-slate-500 flex items-start gap-2">
                         <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
-                        ระบบจะใช้ email เป็นหลักในการตรวจสอบข้อมูลซ้ำ (Unique Key)
+                        ระบบจะใช้ email เป็นหลักในการตรวจสอบข้อมูลซ้ำ
                       </li>
                    </ul>
                 </div>

@@ -9,21 +9,23 @@ import {
   ShieldCheck, 
   Save, 
   Trash2, 
-  Camera, 
   BookOpen, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Clock 
 } from 'lucide-react';
 
 import DashboardHeader from '../components/DashboardHeader';
 import api from '../services/api';
 import { useModal } from '../components/ModalContext';
+import { useToast } from '../components/ToastContext';
 
 const EditUser = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { confirm } = useModal();
+  const { showToast } = useToast();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -88,9 +90,10 @@ const EditUser = () => {
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
-        alert('ไม่สามารถดึงข้อมูลผู้ใช้งานได้');
+        showToast('ไม่สามารถดึงข้อมูลผู้ใช้งานได้', 'error');
         navigate('/admin/accounts');
       } finally {
+
         setIsLoading(false);
       }
     };
@@ -140,12 +143,12 @@ const EditUser = () => {
 
       const response = await api.put(`/users/${id}`, payload);
       if (response.data.success) {
-        alert('อัปเดตข้อมูลผู้ใช้งานสำเร็จ');
+        showToast('อัปเดตข้อมูลผู้ใช้งานสำเร็จ', 'success');
         navigate('/admin/accounts');
       }
     } catch (err: any) {
       console.error('Update user error:', err);
-      alert(err.response?.data?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+      showToast(err.response?.data?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -163,11 +166,12 @@ const EditUser = () => {
       try {
         const response = await api.delete(`/users/${id}`);
         if (response.data.success) {
+          showToast('ลบผู้ใช้งานเรียบร้อยแล้ว', 'success');
           navigate('/admin/accounts');
         }
       } catch (err: any) {
         console.error('Delete user error:', err);
-        alert(err.response?.data?.message || 'ไม่สามารถลบผู้ใช้งานได้');
+        showToast(err.response?.data?.message || 'ไม่สามารถลบผู้ใช้งานได้', 'error');
       } finally {
         setIsDeleting(false);
       }
@@ -186,6 +190,7 @@ const EditUser = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={currentUser?.profile_image}
           unreadCount={0}
           onBack={() => navigate('/admin/accounts')}
           onProfileClick={() => navigate('/profile')}
@@ -212,17 +217,13 @@ const EditUser = () => {
             <div className="flex flex-col items-center mb-12">
               <div className="relative">
                 <div 
-                  className="w-36 h-36 rounded-[40px] bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-2xl group cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
+                  className="w-36 h-36 rounded-[40px] bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-2xl"
                 >
                   {profileImage ? (
                     <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <User size={72} strokeWidth={1.5} className="text-slate-300" />
                   )}
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera className="text-white" size={28} />
-                  </div>
                 </div>
               </div>
               
@@ -334,7 +335,7 @@ const EditUser = () => {
                 <>
                   <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b-2 border-slate-50 pb-3">ข้อมูลนักศึกษา</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                       <div className="space-y-2">
                         <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">รหัสนักศึกษา</label>
                         <div className="relative">
@@ -361,6 +362,21 @@ const EditUser = () => {
                           className="w-full px-5 py-4 border-2 border-slate-100 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700" 
                         />
                       </div>
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">เทอม (Semester)</label>
+                        <div className="relative">
+                          <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                          <input 
+                            type="text" 
+                            name="semester"
+                            value={formData.semester}
+                            onChange={handleInputChange}
+                            placeholder="เช่น 1/2569"
+                            required={formData.role === 'student'}
+                            className="w-full pl-12 pr-5 py-4 border-2 border-slate-100 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700" 
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -374,47 +390,53 @@ const EditUser = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2 bg-slate-50/50 rounded-[32px] border-2 border-white shadow-inner">
-                      {courses.length > 0 ? (
-                        courses.map((course) => (
-                          <div 
-                            key={course._id}
-                            onClick={() => toggleCourse(course._id)}
-                            className={`p-5 rounded-[24px] border-4 transition-all cursor-pointer flex items-center justify-between group ${
-                              enrolledCourses.includes(course._id)
-                                ? 'border-blue-500 bg-blue-50 shadow-lg scale-[1.02]'
-                                : 'border-white bg-white hover:border-slate-100 shadow-sm'
-                            }`}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className={`p-2.5 rounded-xl transition-all ${
-                                enrolledCourses.includes(course._id) ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'
-                              }`}>
-                                <BookOpen size={18} strokeWidth={2.5} />
-                              </div>
-                              <div className="overflow-hidden">
-                                <p className={`text-sm font-black truncate leading-tight ${enrolledCourses.includes(course._id) ? 'text-slate-900' : 'text-slate-600'}`}>
-                                  {course.course_name}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[9px] font-black text-blue-600 uppercase tracking-tighter">{course.course_code}</span>
-                                    <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Y{course.year} • S{course.semester}</span>
+                      {(() => {
+                        const filteredCourses = courses.filter(c => 
+                          (!formData.semester || String(c.semester) === String(formData.semester))
+                        );
+
+                        return filteredCourses.length > 0 ? (
+                          filteredCourses.map((course) => (
+                            <div 
+                              key={course._id}
+                              onClick={() => toggleCourse(course._id)}
+                              className={`p-5 rounded-[24px] border-4 transition-all cursor-pointer flex items-center justify-between group ${
+                                enrolledCourses.includes(course._id)
+                                  ? 'border-blue-500 bg-blue-50 shadow-lg scale-[1.02]'
+                                  : 'border-white bg-white hover:border-slate-100 shadow-sm'
+                              }`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className={`p-2.5 rounded-xl transition-all ${
+                                  enrolledCourses.includes(course._id) ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'
+                                }`}>
+                                  <BookOpen size={18} strokeWidth={2.5} />
+                                </div>
+                                <div className="overflow-hidden">
+                                  <p className={`text-sm font-black truncate leading-tight ${enrolledCourses.includes(course._id) ? 'text-slate-900' : 'text-slate-600'}`}>
+                                    {course.course_name}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-[9px] font-black text-blue-600 uppercase tracking-tighter">{course.course_code}</span>
+                                      <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Y{course.year} • S{course.semester}</span>
+                                  </div>
                                 </div>
                               </div>
+                              {enrolledCourses.includes(course._id) && (
+                                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg animate-in zoom-in duration-300">
+                                  <CheckCircle2 size={14} strokeWidth={3} />
+                                </div>
+                              )}
                             </div>
-                            {enrolledCourses.includes(course._id) && (
-                              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg animate-in zoom-in duration-300">
-                                <CheckCircle2 size={14} strokeWidth={3} />
-                              </div>
-                            )}
+                          ))
+                        ) : (
+                          <div className="col-span-full py-16 text-center">
+                            <AlertCircle className="mx-auto text-slate-200 mb-4" size={56} strokeWidth={1.5} />
+                            <p className="text-slate-400 font-black uppercase tracking-widest text-xs">ไม่พบรายวิชาที่ตรงกับ เทอม {formData.semester || '-'}</p>
                           </div>
-                        ))
-                      ) : (
-                        <div className="col-span-full py-16 text-center">
-                          <AlertCircle className="mx-auto text-slate-200 mb-4" size={56} strokeWidth={1.5} />
-                          <p className="text-slate-400 font-black uppercase tracking-widest text-xs">ไม่พบข้อมูลรายวิชา</p>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 </>
@@ -432,13 +454,16 @@ const EditUser = () => {
                           name="workplace"
                           value={formData.workplace}
                           onChange={handleInputChange}
-                          required={formData.role === 'preceptor'}
+                          required={false}
                           className="w-full pl-12 pr-10 py-4 border-2 border-slate-100 bg-slate-50 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-700 appearance-none cursor-pointer"
                         >
-                          <option value="">เลือกสถานที่</option>
-                          {locations.map(loc => (
-                            <option key={loc._id} value={loc._id}>{loc.Location_name} (เทอม {loc.semester})</option>
-                          ))}
+                          <option value="">เลือกสถานที่ (ไม่บังคับ)</option>
+                          {locations
+                            .filter(loc => !formData.semester || String(loc.semester) === String(formData.semester))
+                            .map(loc => (
+                              <option key={loc._id} value={loc._id}>{loc.Location_name} (เทอม {loc.semester})</option>
+                            ))
+                          }
                         </select>
                       </div>
                     </div>

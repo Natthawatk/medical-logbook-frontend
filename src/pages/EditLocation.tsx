@@ -214,11 +214,39 @@ const EditLocation = () => {
     }
   };
 
-  // Rule: Same semester AND (No workplace OR already assigned here)
-  const filteredPreceptors = preceptors.filter(p => 
-    (!formData.semester || p.semester === formData.semester) && 
-    (!p.workplace || assignedPreceptors.includes(p._id))
-  );
+  // Rule: SAME semester AND (No workplace OR already assigned here)
+  const filteredPreceptors = preceptors.filter(p => {
+    // 1. Check Semester Match (Trim and string compare to be safe)
+    const isSameSemester = String(p.semester || '').trim() === String(formData.semester || '').trim();
+    
+    // 2. Check Workplace Availability
+    // Workplace can be null, undefined, a string ID, or an object with _id
+    const workplaceId = p.workplace?._id || p.workplace;
+    const isUnassigned = !workplaceId || workplaceId === '';
+    const isAlreadyAssignedToThisLocation = workplaceId === id;
+    const isManuallySelected = assignedPreceptors.includes(p._id);
+    
+    return isSameSemester && (isUnassigned || isAlreadyAssignedToThisLocation || isManuallySelected);
+  });
+
+  // Debug log to diagnose empty list issues
+  useEffect(() => {
+    if (!isLoading) {
+      console.log("--- Preceptor Filtering Debug ---");
+      console.log("Target Location ID:", id);
+      console.log("Target Semester:", formData.semester);
+      console.log("Total Preceptors from API:", preceptors.length);
+      
+      const unassigned = preceptors.filter(p => !(p.workplace?._id || p.workplace));
+      console.log("Unassigned Count (All Semesters):", unassigned.length);
+      
+      const semMatch = preceptors.filter(p => String(p.semester || '').trim() === String(formData.semester || '').trim());
+      console.log(`Semester Match (${formData.semester}):`, semMatch.length);
+      
+      console.log("Final Filtered Count:", filteredPreceptors.length);
+      console.log("---------------------------------");
+    }
+  }, [isLoading, preceptors, formData.semester, id, filteredPreceptors.length]);
 
   if (isLoading) {
     return (
@@ -232,6 +260,7 @@ const EditLocation = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}

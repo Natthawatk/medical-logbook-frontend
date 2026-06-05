@@ -16,6 +16,7 @@ const PreceptorDashboard = () => {
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [preceptorName, setPreceptorName] = useState('');
+  const [profileImage, setProfileImage] = useState('');
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -31,6 +32,11 @@ const PreceptorDashboard = () => {
         
         if (userRes.data.success) {
           setPreceptorName(userRes.data.data.firstname_lastname);
+          setProfileImage(userRes.data.data.profile_image);
+          
+          // Update localStorage as well to keep it in sync
+          const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+          localStorage.setItem('user', JSON.stringify({ ...localUser, ...userRes.data.data }));
         }
       } catch (err) {
         console.error('Error fetching preceptor stats:', err);
@@ -54,6 +60,7 @@ const PreceptorDashboard = () => {
     <>
         <DashboardHeader 
           studentName={preceptorName} 
+          profileImage={profileImage}
           unreadCount={stats?.unreadNotificationsCount || 0}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
@@ -75,7 +82,7 @@ const PreceptorDashboard = () => {
               iconColor="text-emerald-700"
             />
             <AdminStatCard 
-              title="รอการประเมิน"
+              title="รอการผ่านการประเมิน"
               value={stats?.pendingCases || 0}
               unit="รายการ"
               icon={<HiClock size={24} />}

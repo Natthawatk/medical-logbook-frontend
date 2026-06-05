@@ -51,13 +51,14 @@ const AddCourse = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
-      // If semester changes, clear enrolled students to avoid cross-semester selection
+      // If semester changes, clear enrolled students and locations to avoid cross-semester selection
       if (name === 'semester' && value !== prev.semester) {
-        return { ...prev, [name]: value, enrolled_students: [] };
+        return { ...prev, [name]: value, enrolled_students: [], enrolled_locations: [] };
       }
       return { ...prev, [name]: value };
     });
   };
+
 
   const handleLocationToggle = (id: string) => {
     setFormData(prev => {
@@ -141,6 +142,7 @@ const AddCourse = () => {
     <>
         <DashboardHeader 
           studentName={adminName} 
+          profileImage={user?.profile_image}
           unreadCount={unreadCount}
           onProfileClick={() => navigate('/profile')}
           onNotificationClick={() => navigate('/notifications')}
