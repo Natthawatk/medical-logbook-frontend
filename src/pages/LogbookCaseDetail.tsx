@@ -12,7 +12,6 @@ import {
   HiChatBubbleLeftRight, 
   HiPaperAirplane, 
   HiCheckBadge, 
-  HiDocumentText,
   HiArrowRight,
   HiArrowLeft,
   HiAcademicCap

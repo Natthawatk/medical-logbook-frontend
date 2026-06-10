@@ -155,7 +155,6 @@ const Login = () => {
               size="large"
               shape="pill"
               width="320px"
-              locale="th"
             />
           </div>
         </form>

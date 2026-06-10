@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
+import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { CheckCircle2, XCircle, Info, X, AlertTriangle } from 'lucide-react';
 
-type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface Toast {
   id: string;
@@ -52,16 +52,19 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               flex items-center gap-4 p-5 rounded-[24px] shadow-2xl border-2 animate-in slide-in-from-right-10 fade-in duration-300
               ${toast.type === 'success' ? 'bg-white border-emerald-100 text-emerald-800' : 
                 toast.type === 'error' ? 'bg-white border-rose-100 text-rose-800' : 
+                toast.type === 'warning' ? 'bg-white border-amber-100 text-amber-800' :
                 'bg-white border-blue-100 text-blue-800'}
             `}
           >
             <div className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center
               ${toast.type === 'success' ? 'bg-emerald-50 text-emerald-500' : 
                 toast.type === 'error' ? 'bg-rose-50 text-rose-500' : 
+                toast.type === 'warning' ? 'bg-amber-50 text-amber-500' :
                 'bg-blue-50 text-blue-500'}
             `}>
               {toast.type === 'success' ? <CheckCircle2 size={24} strokeWidth={2.5} /> : 
                toast.type === 'error' ? <XCircle size={24} strokeWidth={2.5} /> : 
+               toast.type === 'warning' ? <AlertTriangle size={24} strokeWidth={2.5} /> :
                <Info size={24} strokeWidth={2.5} />}
             </div>
             <p className="font-bold text-sm leading-tight flex-grow">{toast.message}</p>

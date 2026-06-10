@@ -11,7 +11,6 @@ import {
   Filter,
   Users,
   ClipboardList,
-  Target,
   MapPin
 } from 'lucide-react';
 import api from '../services/api';

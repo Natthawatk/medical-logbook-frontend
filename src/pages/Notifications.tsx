@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCircle2, Clock, Info, Activity, ClipboardCheck, CalendarCheck } from 'lucide-react';
+import { Bell, CheckCircle2, Info, Activity, ClipboardCheck, CalendarCheck } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import api from '../services/api';
 

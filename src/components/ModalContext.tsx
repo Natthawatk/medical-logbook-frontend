@@ -1,11 +1,13 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { AlertCircle, HelpCircle, X } from 'lucide-react';
 
 interface ModalConfig {
   title: string;
   message: string;
   confirmLabel?: string;
+  confirmText?: string;
   cancelLabel?: string;
+  cancelText?: string;
   type?: 'danger' | 'warning' | 'info';
   onConfirm: () => void;
   onCancel?: () => void;
@@ -97,7 +99,7 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                   onClick={handleCancel}
                   className="flex-1 px-6 py-4 bg-slate-100 text-slate-400 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95 text-[10px]"
                 >
-                  {config.cancelLabel || 'ยกเลิก'}
+                  {config.cancelText || config.cancelLabel || 'ยกเลิก'}
                 </button>
                 <button
                   onClick={handleConfirm}
@@ -107,7 +109,7 @@ export const ModalProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     'bg-blue-600 shadow-blue-200 hover:bg-blue-700'
                   }`}
                 >
-                  {config.confirmLabel || 'ยืนยัน'}
+                  {config.confirmText || config.confirmLabel || 'ยืนยัน'}
                 </button>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/DashboardHeader';
-import { ArrowRight, ClipboardList, BookOpen, Activity, MapPin, User, Send, ChevronDown } from 'lucide-react';
+import { ArrowRight, BookOpen, Activity, MapPin, User, Send, ChevronDown } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../components/ToastContext';
 
@@ -63,7 +63,6 @@ const LogbookCaseForm = () => {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [studentId, setStudentId] = useState<string>('-');
   const [unreadCount, setUnreadCount] = useState(0);
 
   const navigate = useNavigate();
@@ -80,7 +79,6 @@ const LogbookCaseForm = () => {
 
         if (profileRes.data.success) {
           const profile = profileRes.data.data;
-          setStudentId(profile.student_id || '-');
           setCurrentSemester(profile.semester);
         }
         if (unreadRes.data.success) {
@@ -280,7 +278,7 @@ const LogbookCaseForm = () => {
                                             <option value="">เลือกรายการหัตถการ</option>
                                             {procedures.map(proc => {
                                                 const currentTotal = (proc.approvedCount || 0) + (proc.pendingCount || 0);
-                                                const isCompleted = proc.targetCount && currentTotal >= proc.targetCount;
+                                                const isCompleted = !!(proc.targetCount && currentTotal >= proc.targetCount);
                                                 return (
                                                     <option key={proc._id} value={proc._id} disabled={isCompleted}>
                                                         {proc.procedure_name} {isCompleted ? '(ครบแล้ว)' : ''}

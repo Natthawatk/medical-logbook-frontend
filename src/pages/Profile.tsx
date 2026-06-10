@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Phone, Mail, GraduationCap, MapPin, Briefcase, Camera, Clock } from 'lucide-react';
+import { User, Phone, Mail, GraduationCap, MapPin, Briefcase, Clock } from 'lucide-react';
 import DashboardHeader from '../components/DashboardHeader';
 import api from '../services/api';
 import { useToast } from '../components/ToastContext';
@@ -23,7 +23,6 @@ const Profile = () => {
     newPassword: ''
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,13 +64,6 @@ const Profile = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setProfileImage(URL.createObjectURL(file));
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

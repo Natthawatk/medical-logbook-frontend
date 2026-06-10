@@ -10,7 +10,6 @@ import {
   Trash2,
   Filter,
   BookOpen,
-  Target,
   Layers
 } from 'lucide-react';
 import api from '../services/api';

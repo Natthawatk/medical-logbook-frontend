@@ -8,7 +8,6 @@ import {
   Filter, 
   ArrowRight, 
   Download,
-  ClipboardCheck,
   GraduationCap,
   X,
   UserCheck,

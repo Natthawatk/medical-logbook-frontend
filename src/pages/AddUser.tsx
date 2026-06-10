@@ -8,7 +8,6 @@ import {
   GraduationCap, 
   MapPin, 
   ShieldCheck, 
-  Camera, 
   Lock, 
   Plus, 
   BookOpen, 

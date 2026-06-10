@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/DashboardHeader';
 import ProgressGraph from '../components/ProgressGraph';
 import api from '../services/api';
-import { Users, ClipboardList, MapPin, BookOpen, ArrowRight, TrendingUp } from 'lucide-react';
+import { Users, ClipboardList, MapPin, BookOpen, ArrowRight } from 'lucide-react';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
