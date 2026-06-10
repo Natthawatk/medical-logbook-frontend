@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // สร้าง Axios instance พร้อมกำหนด Base URL
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // Hardcode the API URL
+  baseURL: import.meta.env.VITE_API_URL || 'https://medical-logbook-backend.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
