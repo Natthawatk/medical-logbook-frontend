@@ -36,39 +36,62 @@ const LogbookCases = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const studentName = user?.firstname_lastname || 'นักศึกษา';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [casesRes, unreadRes] = await Promise.all([
-          api.get('/logbook-cases/my'),
-          api.get('/notifications/unread-count')
-        ]);
+  const fetchData = async (pageNum: number, isLoadMore = false) => {
+    try {
+      if (isLoadMore) setIsLoadingMore(true);
+      else setIsLoading(true);
+
+      const [casesRes, unreadRes] = await Promise.all([
+        api.get(`/logbook-cases/my?page=${pageNum}&limit=20`),
+        api.get('/notifications/unread-count')
+      ]);
+      
+      if (casesRes.data.success) {
+        const newCases = casesRes.data.data || [];
+        const pagination = casesRes.data.pagination;
         
-        if (casesRes.data.success) {
-          const sorted = (casesRes.data.data || []).sort((a: any, b: any) => 
-            new Date(b.case_date).getTime() - new Date(a.case_date).getTime()
-          );
-          setCases(sorted);
-          setFilteredCases(sorted);
+        if (isLoadMore) {
+          setCases(prev => [...prev, ...newCases]);
+        } else {
+          setCases(newCases);
         }
-        if (unreadRes.data.success) {
-          setUnreadCount(unreadRes.data.count);
-        }
-      } catch (err) {
-        console.error('Error fetching logbook cases:', err);
-      } finally {
-        setIsLoading(false);
+        
+        setHasMore(pagination ? pagination.page < pagination.totalPages : false);
       }
-    };
-    fetchData();
+      
+      if (unreadRes.data.success) {
+        setUnreadCount(unreadRes.data.count);
+      }
+    } catch (err) {
+      console.error('Error fetching logbook cases:', err);
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(1);
   }, []);
+
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchData(nextPage, true);
+    }
+  };
 
   useEffect(() => {
     let filtered = cases.filter(item => 
@@ -291,6 +314,23 @@ const LogbookCases = () => {
                 </tbody>
               </table>
             </div>
+            
+            {hasMore && (
+                <div className="p-8 border-t-2 border-slate-100 flex justify-center">
+                    <button 
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        className="px-10 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95 text-xs flex items-center gap-3"
+                    >
+                        {isLoadingMore ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600"></div>
+                                กำลังโหลด...
+                            </>
+                        ) : 'โหลดข้อมูลเพิ่มเติม'}
+                    </button>
+                </div>
+            )}
           </div>
         </div>
     </>

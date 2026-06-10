@@ -23,6 +23,7 @@ const VerifyShifts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [preceptorName, setPreceptorName] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -30,20 +31,34 @@ const VerifyShifts = () => {
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  
   const navigate = useNavigate();
 
-  const fetchData = async () => {
+  const fetchData = async (pageNum: number, isLoadMore = false) => {
     try {
-      setIsLoading(true);
+      if (isLoadMore) setIsLoadingMore(true);
+      else setIsLoading(true);
+
       const results = await Promise.allSettled([
-        api.get('/shifts/preceptor/shifts'),
+        api.get(`/shifts/preceptor/shifts?page=${pageNum}&limit=20`),
         api.get('/users/me'),
         api.get('/notifications/unread-count')
       ]);
 
       if (results[0].status === 'fulfilled' && results[0].value?.data?.success) {
-        setShifts(results[0].value.data.data || []);
+        const newShifts = results[0].value.data.data || [];
+        const pagination = results[0].value.data.pagination;
+        
+        if (isLoadMore) {
+          setShifts(prev => [...prev, ...newShifts]);
+        } else {
+          setShifts(newShifts);
+        }
+        setHasMore(pagination ? pagination.page < pagination.totalPages : false);
       }
+      
       if (results[1].status === 'fulfilled' && results[1].value?.data?.success) {
         setPreceptorName(results[1].value.data.data?.firstname_lastname || '');
       }
@@ -54,12 +69,21 @@ const VerifyShifts = () => {
       console.error('Error fetching shifts:', err);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(1);
   }, []);
+
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchData(nextPage, true);
+    }
+  };
 
   // Close dropdown on click outside, scroll, or resize
   useEffect(() => {
@@ -355,6 +379,23 @@ const VerifyShifts = () => {
                 </tbody>
               </table>
             </div>
+            
+            {hasMore && (
+                <div className="p-8 border-t-2 border-slate-100 flex justify-center">
+                    <button 
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        className="px-10 py-4 bg-slate-100 text-slate-600 rounded-2xl font-black uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95 text-xs flex items-center gap-3"
+                    >
+                        {isLoadingMore ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600"></div>
+                                กำลังโหลด...
+                            </>
+                        ) : 'โหลดข้อมูลเพิ่มเติม'}
+                    </button>
+                </div>
+            )}
           </div>
         </div>
     </>
